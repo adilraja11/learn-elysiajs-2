@@ -1,26 +1,11 @@
 import { Elysia, t } from "elysia";
 import { swagger } from '@elysiajs/swagger'
-
-class Note {
-  constructor(public data: string[] = ['Moonhalo']) {}
-}
+import { note } from "./routes/note";
 
 const app = new Elysia()
   // apply the swagger plugin
   .use(swagger())
-  .decorate('note', new Note())
-  .get('/note', ({ note }) => note.data)
-  .get(
-    '/note/:index', 
-    ({ note, params: {index}, error }) => {
-      return note.data[index] ?? error(404, 'oh no :(')
-    },
-    {
-      params: t.Object({
-        index: t.Number()
-      })
-    }
-  )
+  .use(note)
   .listen(3000);
 
 console.log(
