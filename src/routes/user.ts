@@ -5,6 +5,24 @@ export const user = new Elysia({ prefix: '/user'})
         user: {} as Record<string, string>,
         session: {} as Record<number, string>
     })
+    .model({
+        signIn: t.Object({
+            username: t.String({ minLength: 1}),
+            password: t.String({ minLength: 8})
+        }),
+        session: t.Cookie(
+            {
+                token: t.Number()
+            },
+            {
+                secrets: 'seia'
+            }
+        )
+    })
+    .model((model) => ({
+        ...model,
+        optionalSession: t.Optional(model.session)
+    }))
     .put(
         '/sign-up',
         async ({ body: {username, password }, store, error}) => {
@@ -22,10 +40,7 @@ export const user = new Elysia({ prefix: '/user'})
             }
         },
         {
-            body: t.Object({
-                username: t.String({ minLength: 1}),
-                password: t.String({ minLength: 8})
-            })
+            body: 'signIn'
         }
     )
     .post(
@@ -55,17 +70,41 @@ export const user = new Elysia({ prefix: '/user'})
             }
         },
         {
-            body: t.Object({
-                username: t.String({ minLength: 1 }),
-                password: t.String( {minLength: 8 })
-            }),
-            cookie: t.Cookie(
-                {
-                    token: t.Number()
-                },
-                {
-                    secrets: 'seia'
-                }
-            )
+            body: 'signIn',
+            cookie: 'optionalSession'
+        }
+    )
+    .get(
+        '/sign-out',
+        ({ cookie: { token } }) => {
+            token.remove()
+
+            return {
+                success: true,
+                message: 'Signed out'
+            }
+        },
+        {
+            cookie: 'optionalSession'
+        }
+    )
+    .get(
+        '/profile',
+        ({ cookie: { token }, store: { session }, error}) => {
+            const username = session[token.value]
+
+            if (!username)
+                return error(401, {
+                    success: false,
+                    message: 'Unauthorized'
+                })
+
+            return {
+                success: true,
+                username
+            }
+        },
+        {
+            cookie: 'session'
         }
     )
