@@ -1,14 +1,14 @@
-import Elysia, { t } from "elysia";
+import { Elysia, t } from 'elysia'
 
-export const userService = new Elysia({ name: 'user/service'})
+export const userService = new Elysia({ name: 'user/service' })
     .state({
         user: {} as Record<string, string>,
         session: {} as Record<number, string>
     })
     .model({
         signIn: t.Object({
-            username: t.String({ minLength: 1}),
-            password: t.String({ minLength: 8})
+            username: t.String({ minLength: 1 }),
+            password: t.String({ minLength: 8 })
         }),
         session: t.Cookie(
             {
@@ -50,19 +50,19 @@ export const userService = new Elysia({ name: 'user/service'})
 export const getUserId = new Elysia()
     .use(userService)
     .guard({
-        isSignIn: true,
+    	isSignIn: true,
         cookie: 'session'
     })
-    .resolve(({ store: { session }, cookie: { token } }) => {
+    .resolve(({ store: { session }, cookie: { token } }) => ({
         username: session[token.value]
-    })
+    }))
     .as('plugin')
 
-export const user = new Elysia({ prefix: '/user'})
-    .use(getUserId)
+export const user = new Elysia({ prefix: '/user' })
+    .use(userService)
     .put(
         '/sign-up',
-        async ({ body: {username, password }, store, error}) => {
+        async ({ body: { username, password }, store, error }) => {
             if (store.user[username])
                 return error(400, {
                     success: false,
@@ -96,7 +96,7 @@ export const user = new Elysia({ prefix: '/user'})
                     success: false,
                     message: 'Invalid username or password'
                 })
-            
+
             const key = crypto.getRandomValues(new Uint32Array(1))[0]
             session[key] = username
             token.value = key
@@ -125,18 +125,8 @@ export const user = new Elysia({ prefix: '/user'})
             cookie: 'optionalSession'
         }
     )
-    .get(
-        '/profile',
-        ({ cookie: { token }, store: { session }, error}) => {
-            const username = session[token.value]
-
-            return {
-                success: true,
-                username
-            }
-        },
-        {
-            isSignIn: true,
-            cookie: 'session'
-        }
-    )
+    .use(getUserId)
+    .get('/profile', ({ username }) => ({
+        success: true,
+        username
+    }))
