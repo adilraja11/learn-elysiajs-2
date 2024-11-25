@@ -6,6 +6,11 @@ import { user } from "./routes/user";
 const app = new Elysia()
   // apply the swagger plugin
   .use(swagger())
+  .onError(({ error, code }) => {
+    if (code == 'NOT_FOUND') return 'Not Found :('
+
+    console.error(error)
+  })
   .use(user)
   .use(note)
   .listen(3000);
