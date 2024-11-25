@@ -50,14 +50,16 @@ export const userService = new Elysia({ name: 'user/service'})
 export const getUserId = new Elysia()
     .use(userService)
     .guard({
+        isSignIn: true,
         cookie: 'session'
     })
     .resolve(({ store: { session }, cookie: { token } }) => {
         username: session[token.value]
     })
+    .as('plugin')
 
 export const user = new Elysia({ prefix: '/user'})
-    .use(userService)
+    .use(getUserId)
     .put(
         '/sign-up',
         async ({ body: {username, password }, store, error}) => {

@@ -6,8 +6,8 @@ import { user } from "./routes/user";
 const app = new Elysia()
   // apply the swagger plugin
   .use(swagger())
-  .use(note)
   .use(user)
+  .use(note)
   .listen(3000);
 
 console.log(
